@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { PawPrint } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
+import { supabase } from '@/lib/supabase';
 
 /**
  * Página de inicio de sesión para protectoras y administradores.
@@ -21,23 +22,53 @@ const LoginPage = () => {
      * Maneja el envío del formulario de login.
      * Simula una verificación de credenciales y redirige al panel correspondiente.
      */
-    const handleLogin = (e: React.FormEvent) => {
+    const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
 
-        // Simulate login logic
-        setTimeout(() => {
-            setIsLoading(false);
-            if (email === 'admin@adopta.com') {
-                if (password === 'Bla193005') {
-                    navigate('/super-admin');
-                } else {
-                    alert('Contraseña incorrecta');
-                }
-            } else {
-                navigate('/admin');
+        try {
+            // 1. Check if it's an Admin
+            const { data: adminData } = await supabase
+                .from('admins')
+                .select('*')
+                .eq('email', email)
+                .single();
+
+            if (adminData && adminData.password === password) {
+                setIsLoading(false);
+                navigate('/super-admin');
+                return;
             }
-        }, 1000);
+
+            // 2. Check if it's a Shelter
+            const { data: shelterData } = await supabase
+                .from('shelters')
+                .select('*')
+                .eq('email', email)
+                .single();
+
+            if (shelterData) {
+                if (shelterData.password === password) {
+                    if (shelterData.status === 'Activa') {
+                        setIsLoading(false);
+                        navigate('/admin');
+                    } else {
+                        alert('Tu cuenta aún no está activa. Por favor espera a que un administrador la apruebe.');
+                        setIsLoading(false);
+                    }
+                    return;
+                }
+            }
+
+            // 3. If neither
+            alert('Email o contraseña incorrectos');
+
+        } catch (error) {
+            console.error('Login error:', error);
+            alert('Ha ocurrido un error al iniciar sesión');
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return (

@@ -12,6 +12,7 @@ export interface Shelter {
     status: 'Activa' | 'Pendiente' | 'Inactiva';
     joinedDate: string;
     donationNumber?: string;
+    password?: string;
 }
 
 export const shelters: Shelter[] = [

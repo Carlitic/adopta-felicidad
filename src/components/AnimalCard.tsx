@@ -3,7 +3,7 @@ import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Link } from 'react-router-dom';
-import { shelters } from '@/data/mockShelters';
+import { useShelterContext } from '@/context/ShelterContext';
 
 interface AnimalCardProps {
     animal: Animal;
@@ -11,6 +11,7 @@ interface AnimalCardProps {
 
 const AnimalCard = ({ animal }: AnimalCardProps) => {
     // Busca la información de la protectora asociada al animal usando el shelterId
+    const { shelters } = useShelterContext();
     const shelter = shelters.find(s => s.id === animal.shelterId);
 
     return (

@@ -1,56 +1,99 @@
-import { createContext, useContext, useState, ReactNode } from 'react';
-import { animals as initialAnimals, Animal } from '@/data/mockData';
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { Animal } from '@/data/mockData';
+import { supabase } from '@/lib/supabase';
 
 interface AnimalContextType {
     animals: Animal[];
-    addAnimal: (animal: Omit<Animal, 'id' | 'status' | 'personality' | 'health'>) => void;
-    updateAnimal: (animal: Animal) => void;
-    deleteAnimal: (id: string) => void;
+    isLoading: boolean;
+    addAnimal: (animal: Omit<Animal, 'id' | 'status' | 'personality' | 'health'>) => Promise<void>;
+    updateAnimal: (animal: Animal) => Promise<void>;
+    deleteAnimal: (id: string) => Promise<void>;
 }
 
 const AnimalContext = createContext<AnimalContextType | undefined>(undefined);
 
 export const AnimalProvider = ({ children }: { children: ReactNode }) => {
-    // Estado local para almacenar la lista de animales
-    const [animals, setAnimals] = useState<Animal[]>(initialAnimals);
+    const [animals, setAnimals] = useState<Animal[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
 
-    /**
-     * Añade un nuevo animal al estado.
-     * Genera un ID único, establece el estado inicial como 'Disponible'
-     * y asigna un refugio por defecto.
-     * @param newAnimalData Datos del nuevo animal (sin id, status, etc.)
-     */
+    useEffect(() => {
+        fetchAnimals();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
-    const addAnimal = (newAnimalData: Omit<Animal, 'id' | 'status' | 'personality' | 'health'>) => {
-        const newAnimal: Animal = {
-            ...newAnimalData,
-            id: (animals.length + 1).toString(),
-            status: 'Disponible',
-            personality: [],
-            health: 'Desconocido',
-            shelterId: 1,
-        };
-        setAnimals([...animals, newAnimal]);
+    const fetchAnimals = async () => {
+        try {
+            const { data, error } = await supabase.from('animals').select('*');
+            if (error) throw error;
+            // The DB id is number (bigint), frontend is string. We need to cast or convert.
+            // For now, casting seems safest to avoid huge refactors of interfaces. 
+            // Ideally we'd map data.
+            const mappedAnimals = data?.map(d => ({
+                ...d,
+                id: d.id.toString(), // Ensure ID is string for frontend compatibility
+                shelterId: Number(d.shelter_id) // Map camelCase from snake_case
+            }));
+            if (mappedAnimals) setAnimals(mappedAnimals as unknown as Animal[]);
+        } catch (error) {
+            console.error('Error fetching animals:', error);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
-    /**
-     * Actualiza la información de un animal existente.
-     * @param updatedAnimal Objeto animal con los datos actualizados
-     */
-    const updateAnimal = (updatedAnimal: Animal) => {
-        setAnimals(animals.map(a => a.id === updatedAnimal.id ? updatedAnimal : a));
+    const addAnimal = async (newAnimalData: Omit<Animal, 'id' | 'status' | 'personality' | 'health'>) => {
+        try {
+            const dbPayload = {
+                name: newAnimalData.name,
+                species: newAnimalData.species,
+                breed: newAnimalData.breed,
+                age: newAnimalData.age,
+                size: newAnimalData.size,
+                // gender: newAnimalData.gender, // Not part of interface
+                description: newAnimalData.description,
+                // personality: newAnimalData.personality, // If array in DB supported
+                // health: newAnimalData.health,
+                image: newAnimalData.image,
+                shelter_id: newAnimalData.shelterId,
+            };
+
+            const { data, error } = await supabase.from('animals').insert([dbPayload]).select();
+            if (error) throw error;
+            if (data) {
+                const newAnimal = {
+                    ...data[0],
+                    id: data[0].id.toString(),
+                    shelterId: data[0].shelter_id
+                };
+                setAnimals(prev => [...prev, newAnimal as unknown as Animal]);
+            }
+        } catch (error) {
+            console.error('Error adding animal:', error);
+        }
     };
 
-    /**
-     * Elimina un animal del estado por su ID.
-     * @param id ID del animal a eliminar
-     */
-    const deleteAnimal = (id: string) => {
-        setAnimals(animals.filter(a => a.id !== id));
+    const updateAnimal = async (updatedAnimal: Animal) => {
+        try {
+            // Logic for update would go here
+            setAnimals(prev => prev.map(a => a.id === updatedAnimal.id ? updatedAnimal : a));
+        } catch (error) {
+            console.error('Error updating animal:', error);
+        }
+    };
+
+    const deleteAnimal = async (id: string) => {
+        try {
+            // Supabase delete logic
+            const { error } = await supabase.from('animals').delete().eq('id', id);
+            if (error) throw error;
+            setAnimals(animals.filter(a => a.id !== id));
+        } catch (error) {
+            console.error('Error deleting animal:', error);
+        }
     };
 
     return (
-        <AnimalContext.Provider value={{ animals, addAnimal, updateAnimal, deleteAnimal }}>
+        <AnimalContext.Provider value={{ animals, isLoading, addAnimal, updateAnimal, deleteAnimal }}>
             {children}
         </AnimalContext.Provider>
     );

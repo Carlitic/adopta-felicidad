@@ -1,18 +1,23 @@
 import { useParams, Link } from 'react-router-dom';
-import { animals } from '@/data/mockData';
+// import { animals } from '@/data/mockData'; // Removed
+import { useShelterContext } from '@/context/ShelterContext';
+import { useAnimalContext } from '@/context/AnimalContext';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Check, Heart, Share2 } from 'lucide-react';
+import { ArrowLeft, Check } from 'lucide-react';
 import { useState } from 'react';
 
 const AnimalDetail = () => {
     // Obtiene el ID del animal de la URL y busca sus datos
     const { id } = useParams();
+    const { shelters } = useShelterContext();
+    const { animals } = useAnimalContext();
     const animal = animals.find((a) => a.id === id);
+    const shelter = animal ? shelters.find((s) => s.id === animal.shelterId) : undefined;
     const [submitted, setSubmitted] = useState(false);
 
     if (!animal) {
@@ -77,12 +82,7 @@ const AnimalDetail = () => {
                                 <p className="text-xl text-muted-foreground">{animal.breed}</p>
                             </div>
                             <div className="flex gap-2">
-                                <Button variant="outline" size="icon" className="rounded-full">
-                                    <Share2 className="h-5 w-5" />
-                                </Button>
-                                <Button variant="outline" size="icon" className="rounded-full text-red-500 hover:text-red-600">
-                                    <Heart className="h-5 w-5" />
-                                </Button>
+                                {/* Buttons removed as per request */}
                             </div>
                         </div>
 
@@ -100,6 +100,13 @@ const AnimalDetail = () => {
                                 {animal.status}
                             </Badge>
                         </div>
+
+                        {shelter && (
+                            <div className="mb-6 p-4 bg-muted/30 rounded-lg border">
+                                <h3 className="font-semibold text-lg mb-1">{shelter.name}</h3>
+                                <p className="text-muted-foreground">{shelter.city}, {shelter.province}</p>
+                            </div>
+                        )}
 
                         <div className="prose max-w-none text-muted-foreground mb-8">
                             <p className="text-lg leading-relaxed">{animal.description}</p>

@@ -1,53 +1,88 @@
-import { createContext, useContext, useState, ReactNode } from 'react';
-import { Shelter, shelters as initialShelters } from '@/data/mockShelters';
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { Shelter } from '@/data/mockShelters';
+import { supabase } from '@/lib/supabase';
 
 interface ShelterContextType {
     shelters: Shelter[];
-    addShelter: (shelter: Omit<Shelter, 'id' | 'status' | 'joinedDate'>) => void;
-    updateShelter: (shelter: Shelter) => void;
-    deleteShelter: (id: number) => void;
+    isLoading: boolean;
+    addShelter: (shelter: Omit<Shelter, 'id' | 'status' | 'joinedDate'> & { password?: string }) => Promise<void>;
+    updateShelter: (shelter: Shelter) => Promise<void>;
+    deleteShelter: (id: number) => Promise<void>;
 }
 
 const ShelterContext = createContext<ShelterContextType | undefined>(undefined);
 
 export const ShelterProvider = ({ children }: { children: ReactNode }) => {
-    // Estado local para almacenar la lista de refugios/protectoras
-    const [shelters, setShelters] = useState<Shelter[]>(initialShelters);
+    const [shelters, setShelters] = useState<Shelter[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
 
-    /**
-     * Añade una nueva protectora al sistema.
-     * Genera un ID numérico secuencial y establece el estado como 'Pendiente'.
-     * @param newShelterData Datos de la nueva protectora
-     */
+    useEffect(() => {
+        fetchShelters();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
-    const addShelter = (newShelterData: Omit<Shelter, 'id' | 'status' | 'joinedDate'>) => {
-        const newShelter: Shelter = {
-            ...newShelterData,
-            id: Math.max(...shelters.map(s => s.id), 0) + 1,
-            status: 'Pendiente',
-            joinedDate: new Date().toISOString().split('T')[0],
-        };
-        setShelters([...shelters, newShelter]);
+    const fetchShelters = async () => {
+        try {
+            const { data, error } = await supabase.from('shelters').select('*');
+            if (error) throw error;
+            if (data) setShelters(data as unknown as Shelter[]); // Cast to match interface for now
+        } catch (error) {
+            console.error('Error fetching shelters:', error);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
-    /**
-     * Actualiza los datos de una protectora existente.
-     * @param updatedShelter Objeto protectora con los datos actualizados
-     */
-    const updateShelter = (updatedShelter: Shelter) => {
-        setShelters(shelters.map(s => s.id === updatedShelter.id ? updatedShelter : s));
+    const addShelter = async (newShelterData: Omit<Shelter, 'id' | 'status' | 'joinedDate'> & { password?: string }) => {
+        try {
+            // Map frontend fields to DB columns if they differ (assuming snake_case in DB based on plan)
+            const dbPayload = {
+                name: newShelterData.name,
+                email: newShelterData.email,
+                phone: newShelterData.phone,
+                city: newShelterData.city,
+                province: newShelterData.province,
+                location: newShelterData.location, // Note: DB schema has location, city, province. 
+                donation_number: newShelterData.donationNumber,
+                password: newShelterData.password,
+                status: 'Pendiente'
+            };
+
+            const { data, error } = await supabase.from('shelters').insert([dbPayload]).select();
+            if (error) throw error;
+            if (data) {
+                // Refresh local state or append
+                setShelters(prev => [...prev, data[0] as unknown as Shelter]);
+            }
+        } catch (error) {
+            console.error('Error adding shelter:', error);
+            alert('Error al registrar la protectora. Por favor inténtalo de nuevo.');
+        }
     };
 
-    /**
-     * Elimina una protectora del sistema.
-     * @param id ID de la protectora a eliminar
-     */
-    const deleteShelter = (id: number) => {
-        setShelters(shelters.filter(s => s.id !== id));
+    const updateShelter = async (updatedShelter: Shelter) => {
+        // Implementation for update if needed (omitted for brevity if not strictly requested, but good to have signature)
+        try {
+            const { error } = await supabase.from('shelters').update(updatedShelter).eq('id', updatedShelter.id);
+            if (error) throw error;
+            setShelters(prev => prev.map(s => s.id === updatedShelter.id ? updatedShelter : s));
+        } catch (error) {
+            console.error('Error updating shelter:', error);
+        }
+    };
+
+    const deleteShelter = async (id: number) => {
+        try {
+            const { error } = await supabase.from('shelters').delete().eq('id', id);
+            if (error) throw error;
+            setShelters(prev => prev.filter(s => s.id !== id));
+        } catch (error) {
+            console.error('Error deleting shelter:', error);
+        }
     };
 
     return (
-        <ShelterContext.Provider value={{ shelters, addShelter, updateShelter, deleteShelter }}>
+        <ShelterContext.Provider value={{ shelters, isLoading, addShelter, updateShelter, deleteShelter }}>
             {children}
         </ShelterContext.Provider>
     );

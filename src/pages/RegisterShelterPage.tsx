@@ -22,6 +22,7 @@ const RegisterShelterPage = () => {
         province: '',
         phone: '',
         email: '',
+        password: '',
         donationNumber: '',
     });
 
@@ -47,6 +48,7 @@ const RegisterShelterPage = () => {
                 province: formData.province,
                 location: formData.city, // Using city as location for now
                 donationNumber: formData.donationNumber,
+                password: formData.password,
             });
             setIsLoading(false);
             alert('Solicitud enviada con éxito. Un administrador revisará tu solicitud.');
@@ -91,6 +93,10 @@ const RegisterShelterPage = () => {
                         <div className="space-y-2">
                             <Label htmlFor="email">Correo Electrónico</Label>
                             <Input id="email" type="email" required value={formData.email} onChange={handleChange} placeholder="contacto@refugio.com" />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="password">Contraseña</Label>
+                            <Input id="password" type="password" required value={formData.password} onChange={handleChange} placeholder="******" />
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="donationNumber">Número de Cuenta para Donaciones (Opcional)</Label>
