@@ -23,14 +23,22 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useShelterContext } from '@/context/ShelterContext';
 import { AnimalManagementTable } from '@/components/admin/AnimalManagementTable';
+import { useAnimalContext } from '@/context/AnimalContext';
+import { supabase } from '@/lib/supabase';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const SuperAdminDashboard = () => {
     // Obtiene las funciones y datos del contexto de protectoras
     const { shelters, addShelter, updateShelter, deleteShelter } = useShelterContext();
+    const { addAnimal } = useAnimalContext();
 
-    // Estados para controlar los diálogos de creación y edición
+    // Estados para controlar los diálogos
     const [isEditOpen, setIsEditOpen] = useState(false);
     const [isAddOpen, setIsAddOpen] = useState(false);
+    const [isAddAnimalOpen, setIsAddAnimalOpen] = useState(false);
+    const [uploading, setUploading] = useState(false);
+
     const [editingShelter, setEditingShelter] = useState<any>(null);
     const [newShelter, setNewShelter] = useState({
         name: '',
@@ -40,6 +48,77 @@ const SuperAdminDashboard = () => {
         province: '',
         donationNumber: '',
     });
+
+    const [newAnimal, setNewAnimal] = useState({
+        name: '',
+        species: '',
+        breed: '',
+        age: '',
+        size: '',
+        image: '',
+        description: '',
+        shelterId: '',
+    });
+
+    const handleAnimalInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        setNewAnimal({ ...newAnimal, [e.target.id]: e.target.value });
+    };
+
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        try {
+            if (!e.target.files || e.target.files.length === 0) {
+                return;
+            }
+            setUploading(true);
+            const file = e.target.files[0];
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${Math.random()}.${fileExt}`;
+            const filePath = `${fileName}`;
+
+            const { error: uploadError } = await supabase.storage
+                .from('animal-images')
+                .upload(filePath, file);
+
+            if (uploadError) {
+                throw uploadError;
+            }
+
+            const { data } = supabase.storage.from('animal-images').getPublicUrl(filePath);
+
+            setNewAnimal({ ...newAnimal, image: data.publicUrl });
+        } catch (error) {
+            alert('Error subiendo la imagen');
+            console.error(error);
+        } finally {
+            setUploading(false);
+        }
+    };
+
+    const handleAddAnimal = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!newAnimal.shelterId) {
+            alert('Por favor selecciona una protectora');
+            return;
+        }
+
+        addAnimal({
+            ...newAnimal,
+            species: newAnimal.species as 'Perro' | 'Gato',
+            size: newAnimal.size as 'Pequeño' | 'Mediano' | 'Grande',
+            shelterId: parseInt(newAnimal.shelterId),
+        });
+        setIsAddAnimalOpen(false);
+        setNewAnimal({
+            name: '',
+            species: '',
+            breed: '',
+            age: '',
+            size: '',
+            image: '',
+            description: '',
+            shelterId: '',
+        });
+    };
 
     const pendingShelters = shelters.filter(s => s.status === 'Pendiente');
     const activeShelters = shelters.filter(s => s.status !== 'Pendiente');
@@ -208,9 +287,14 @@ const SuperAdminDashboard = () => {
             </div>
 
             {/* Global Animals Management Section */}
-            <h2 className="text-xl font-semibold mb-4 text-primary flex items-center gap-2">
-                <ShieldCheck className="h-5 w-5" /> Gestión Global de Animales
-            </h2>
+            <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-semibold text-primary flex items-center gap-2">
+                    <ShieldCheck className="h-5 w-5" /> Gestión Global de Animales
+                </h2>
+                <Button onClick={() => setIsAddAnimalOpen(true)} className="bg-primary hover:bg-primary/90 text-white" size="sm">
+                    <Plus className="mr-2 h-4 w-4" /> Añadir Animal (Global)
+                </Button>
+            </div>
             <div className="bg-white rounded-lg border shadow-sm overflow-hidden">
                 <AnimalManagementTable />
             </div>
@@ -220,6 +304,89 @@ const SuperAdminDashboard = () => {
                     <Button variant="link" className="text-muted-foreground">Cerrar Sesión</Button>
                 </Link>
             </div>
+
+            {/* Add Animal Dialog */}
+            <Dialog open={isAddAnimalOpen} onOpenChange={setIsAddAnimalOpen}>
+                <DialogContent className="sm:max-w-[500px]">
+                    <DialogHeader>
+                        <DialogTitle>Añadir Animal (Super Admin)</DialogTitle>
+                        <DialogDescription>
+                            Añade un animal asignándolo a una protectora específica.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <form onSubmit={handleAddAnimal}>
+                        <div className="grid gap-4 py-4">
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <Label htmlFor="shelter-select" className="text-right">Protectora</Label>
+                                <div className="col-span-3">
+                                    <Select
+                                        value={newAnimal.shelterId}
+                                        onValueChange={(val) => setNewAnimal({ ...newAnimal, shelterId: val })}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Selecciona una protectora" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {activeShelters.map((s) => (
+                                                <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <Label htmlFor="animal-name" className="text-right">Nombre</Label>
+                                <Input
+                                    id="name"
+                                    value={newAnimal.name}
+                                    onChange={handleAnimalInputChange}
+                                    className="col-span-3"
+                                    required
+                                />
+                            </div>
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <Label htmlFor="animal-species" className="text-right">Especie</Label>
+                                <Input
+                                    id="species"
+                                    value={newAnimal.species}
+                                    onChange={handleAnimalInputChange}
+                                    className="col-span-3"
+                                    placeholder="Perro, Gato..."
+                                    required
+                                />
+                            </div>
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <Label htmlFor="animal-image" className="text-right">Foto</Label>
+                                <div className="col-span-3">
+                                    <Input
+                                        id="image-upload"
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={handleImageUpload}
+                                        disabled={uploading}
+                                        className="mb-2"
+                                    />
+                                    {newAnimal.image && <p className="text-xs text-green-600">¡Imagen lista!</p>}
+                                    {uploading && <p className="text-xs text-muted-foreground">Subiendo...</p>}
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <Label htmlFor="description" className="text-right">Descripción</Label>
+                                <Textarea
+                                    id="description"
+                                    value={newAnimal.description}
+                                    onChange={handleAnimalInputChange}
+                                    className="col-span-3"
+                                    required
+                                />
+                            </div>
+                        </div>
+                        <DialogFooter>
+                            <Button type="submit" disabled={uploading}>Guardar Animal</Button>
+                        </DialogFooter>
+                    </form>
+                </DialogContent>
+            </Dialog>
 
             {/* Add Dialog */}
             <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
@@ -277,13 +444,13 @@ const SuperAdminDashboard = () => {
                             />
                         </div>
                         <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="newDonation" className="text-right">Donaciones</Label>
+                            <Label htmlFor="newDonation" className="text-right">Num. Donación</Label>
                             <Input
                                 id="newDonation"
                                 value={newShelter.donationNumber}
                                 onChange={(e) => setNewShelter({ ...newShelter, donationNumber: e.target.value })}
                                 className="col-span-3"
-                                placeholder="ES00..."
+                                placeholder="Ej: 600123456"
                             />
                         </div>
                     </div>
@@ -341,13 +508,13 @@ const SuperAdminDashboard = () => {
                                 />
                             </div>
                             <div className="grid grid-cols-4 items-center gap-4">
-                                <Label htmlFor="donationNumber" className="text-right">Donaciones</Label>
+                                <Label htmlFor="donationNumber" className="text-right">Num. Donación</Label>
                                 <Input
                                     id="donationNumber"
                                     value={editingShelter.donationNumber || ''}
                                     onChange={(e) => setEditingShelter({ ...editingShelter, donationNumber: e.target.value })}
                                     className="col-span-3"
-                                    placeholder="ES00 0000 0000 0000 0000 0000"
+                                    placeholder="Ej: 600123456"
                                 />
                             </div>
                             <div className="grid grid-cols-4 items-center gap-4">

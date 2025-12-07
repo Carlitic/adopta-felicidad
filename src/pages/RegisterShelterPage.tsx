@@ -99,8 +99,8 @@ const RegisterShelterPage = () => {
                             <Input id="password" type="password" required value={formData.password} onChange={handleChange} placeholder="******" />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="donationNumber">Número de Cuenta para Donaciones (Opcional)</Label>
-                            <Input id="donationNumber" value={formData.donationNumber} onChange={handleChange} placeholder="ES00 0000 0000 0000 0000 0000" />
+                            <Label htmlFor="donationNumber">Número para Donaciones (Bizum/Teléfono/Otro)</Label>
+                            <Input id="donationNumber" value={formData.donationNumber} onChange={handleChange} placeholder="Ej: 600123456" />
                         </div>
                     </CardContent>
                     <CardFooter className="flex flex-col gap-4">
