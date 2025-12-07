@@ -14,7 +14,7 @@ const Footer = () => {
                         <span className="font-semibold">Adopta Felicidad</span>
                     </div>
                     <p className="text-sm text-muted-foreground text-center md:text-right">
-                        © {new Date().getFullYear()} Adopta Felicidad. v1.0.0
+                        © {new Date().getFullYear()} Adopta Felicidad. v1.1.0
                     </p>
                 </div>
             </div>

@@ -24,6 +24,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useAnimalContext } from '@/context/AnimalContext';
+import { supabase } from '@/lib/supabase';
 
 const AdminDashboard = () => {
     // Obtiene las funciones y datos del contexto de animales
@@ -43,8 +44,40 @@ const AdminDashboard = () => {
         description: '',
     });
 
+    const [uploading, setUploading] = useState(false);
+
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         setNewAnimal({ ...newAnimal, [e.target.id]: e.target.value });
+    };
+
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        try {
+            if (!e.target.files || e.target.files.length === 0) {
+                return;
+            }
+            setUploading(true);
+            const file = e.target.files[0];
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${Math.random()}.${fileExt}`;
+            const filePath = `${fileName}`;
+
+            const { error: uploadError } = await supabase.storage
+                .from('animal-images')
+                .upload(filePath, file);
+
+            if (uploadError) {
+                throw uploadError;
+            }
+
+            const { data } = supabase.storage.from('animal-images').getPublicUrl(filePath);
+
+            setNewAnimal({ ...newAnimal, image: data.publicUrl });
+        } catch (error) {
+            alert('Error subiendo la imagen');
+            console.error(error);
+        } finally {
+            setUploading(false);
+        }
     };
 
     /**
@@ -58,6 +91,7 @@ const AdminDashboard = () => {
             species: newAnimal.species as 'Perro' | 'Gato',
             size: newAnimal.size as 'Pequeño' | 'Mediano' | 'Grande',
             shelterId: 1, // Por defecto asignamos al refugio principal
+            // status: 'Disponible' // Status por defecto
         });
         setIsDialogOpen(false);
         setNewAnimal({
@@ -133,16 +167,22 @@ const AdminDashboard = () => {
                                 </div>
                                 <div className="grid grid-cols-4 items-center gap-4">
                                     <Label htmlFor="image" className="text-right">
-                                        Foto URL
+                                        Foto
                                     </Label>
-                                    <Input
-                                        id="image"
-                                        value={newAnimal.image}
-                                        onChange={handleInputChange}
-                                        className="col-span-3"
-                                        placeholder="https://..."
-                                        required
-                                    />
+                                    <div className="col-span-3">
+                                        <Input
+                                            id="image-upload"
+                                            type="file"
+                                            accept="image/*"
+                                            onChange={handleImageUpload}
+                                            disabled={uploading}
+                                            className="mb-2"
+                                        />
+                                        {newAnimal.image && (
+                                            <p className="text-xs text-green-600">¡Imagen subida correctamente!</p>
+                                        )}
+                                        {uploading && <p className="text-xs text-muted-foreground">Subiendo...</p>}
+                                    </div>
                                 </div>
                                 <div className="grid grid-cols-4 items-center gap-4">
                                     <Label htmlFor="description" className="text-right">

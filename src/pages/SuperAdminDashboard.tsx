@@ -22,6 +22,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useShelterContext } from '@/context/ShelterContext';
+import { AnimalManagementTable } from '@/components/admin/AnimalManagementTable';
 
 const SuperAdminDashboard = () => {
     // Obtiene las funciones y datos del contexto de protectoras
@@ -161,7 +162,7 @@ const SuperAdminDashboard = () => {
 
             {/* All Shelters Section */}
             <h2 className="text-xl font-semibold mb-4">Protectoras Registradas</h2>
-            <div className="bg-white rounded-lg border shadow-sm overflow-hidden">
+            <div className="bg-white rounded-lg border shadow-sm overflow-hidden mb-12">
                 <Table>
                     <TableHeader>
                         <TableRow>
@@ -206,7 +207,15 @@ const SuperAdminDashboard = () => {
                 </Table>
             </div>
 
-            <div className="mt-4 text-right">
+            {/* Global Animals Management Section */}
+            <h2 className="text-xl font-semibold mb-4 text-primary flex items-center gap-2">
+                <ShieldCheck className="h-5 w-5" /> Gestión Global de Animales
+            </h2>
+            <div className="bg-white rounded-lg border shadow-sm overflow-hidden">
+                <AnimalManagementTable />
+            </div>
+
+            <div className="mt-8 text-right">
                 <Link to="/">
                     <Button variant="link" className="text-muted-foreground">Cerrar Sesión</Button>
                 </Link>
