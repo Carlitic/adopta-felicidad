@@ -27,7 +27,40 @@ const LoginPage = () => {
         setIsLoading(true);
 
         try {
-            // 1. Check if it's an Admin
+            // 1. Intentar Login con Supabase Auth (Para Protectoras)
+            const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+                email,
+                password,
+            });
+
+            if (!authError && authData.user) {
+                // Login exitoso en Auth, verificamos si es una protectora y su estado
+                const { data: shelterData } = await supabase
+                    .from('shelters')
+                    .select('*')
+                    .eq('user_id', authData.user.id) // Buscamos por ID de usuario seguro
+                    .single();
+
+                if (shelterData) {
+                    if (shelterData.status === 'Activa') {
+                        navigate('/admin');
+                        return;
+                    } else {
+                        await supabase.auth.signOut(); // Cerramos sesión si no está activa
+                        alert('Tu cuenta está pendiente de aprobación. Espera a que un administrador la active.');
+                        return;
+                    }
+                }
+
+                // Si entra aquí, es un usuario autenticado pero NO es protectora (¿Quizás futuro Admin en Auth?)
+                // Por ahora cerramos sesión
+                await supabase.auth.signOut();
+                alert('Usuario no reconocido como protectora.');
+                return;
+            }
+
+            // 2. Si falla Auth, probamos si es el viejo "Super Admin" (Tabla admins antigua)
+            // NOTA: Idealmente migraríamos Admin a Auth también, pero mantenemos compatibilidad por ahora.
             const { data: adminData } = await supabase
                 .from('admins')
                 .select('*')
@@ -35,37 +68,17 @@ const LoginPage = () => {
                 .single();
 
             if (adminData && adminData.password === password) {
-                setIsLoading(false);
+                // Es Admin Legacy
                 navigate('/super-admin');
                 return;
             }
 
-            // 2. Check if it's a Shelter
-            const { data: shelterData } = await supabase
-                .from('shelters')
-                .select('*')
-                .eq('email', email)
-                .single();
+            // Si llegamos aquí, nada funcionó
+            throw new Error('Email o contraseña incorrectos');
 
-            if (shelterData) {
-                if (shelterData.password === password) {
-                    if (shelterData.status === 'Activa') {
-                        setIsLoading(false);
-                        navigate('/admin');
-                    } else {
-                        alert('Tu cuenta aún no está activa. Por favor espera a que un administrador la apruebe.');
-                        setIsLoading(false);
-                    }
-                    return;
-                }
-            }
-
-            // 3. If neither
-            alert('Email o contraseña incorrectos');
-
-        } catch (error) {
+        } catch (error: any) {
             console.error('Login error:', error);
-            alert('Ha ocurrido un error al iniciar sesión');
+            alert(error.message || 'Error al iniciar sesión');
         } finally {
             setIsLoading(false);
         }

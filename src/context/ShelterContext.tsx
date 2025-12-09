@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase';
 interface ShelterContextType {
     shelters: Shelter[];
     isLoading: boolean;
-    addShelter: (shelter: Omit<Shelter, 'id' | 'status' | 'joinedDate'> & { password?: string }) => Promise<void>;
+    addShelter: (shelter: Omit<Shelter, 'id' | 'status' | 'joinedDate'>) => Promise<void>;
     updateShelter: (shelter: Shelter) => Promise<void>;
     deleteShelter: (id: number) => Promise<void>;
 }
@@ -33,18 +33,18 @@ export const ShelterProvider = ({ children }: { children: ReactNode }) => {
         }
     };
 
-    const addShelter = async (newShelterData: Omit<Shelter, 'id' | 'status' | 'joinedDate'> & { password?: string }) => {
+    const addShelter = async (newShelterData: Omit<Shelter, 'id' | 'status' | 'joinedDate'>) => {
         try {
-            // Map frontend fields to DB columns if they differ (assuming snake_case in DB based on plan)
+            // Map frontend fields to DB columns
             const dbPayload = {
                 name: newShelterData.name,
                 email: newShelterData.email,
                 phone: newShelterData.phone,
                 city: newShelterData.city,
                 province: newShelterData.province,
-                location: newShelterData.location, // Note: DB schema has location, city, province. 
+                location: newShelterData.location,
                 donation_number: newShelterData.donationNumber,
-                password: newShelterData.password,
+                // password removed
                 status: 'Pendiente'
             };
 

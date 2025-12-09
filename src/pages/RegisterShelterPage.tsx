@@ -7,6 +7,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 
 import { useShelterContext } from '@/context/ShelterContext';
+import { supabase } from '@/lib/supabase';
 
 /**
  * Página de registro para nuevas protectoras.
@@ -34,26 +35,50 @@ const RegisterShelterPage = () => {
      * Maneja el envío del formulario de registro.
      * Añade la protectora al contexto con estado 'Pendiente' y simula una llamada a API.
      */
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
 
-        // Simulate API call
-        setTimeout(() => {
-            addShelter({
-                name: formData.name,
+        try {
+            // 1. Registrar usuario en Supabase Auth
+            const { data: authData, error: authError } = await supabase.auth.signUp({
                 email: formData.email,
-                phone: formData.phone,
-                city: formData.city,
-                province: formData.province,
-                location: formData.city, // Using city as location for now
-                donationNumber: formData.donationNumber,
                 password: formData.password,
             });
+
+            if (authError) throw authError;
+
+            if (authData.user) {
+                // 2. Crear perfil en la tabla 'shelters'
+                // Nota: addShelter ya no se usa aquí porque requiere lógica específica de ID
+                const { error: profileError } = await supabase
+                    .from('shelters')
+                    .insert([
+                        {
+                            user_id: authData.user.id, // VINCULACIÓN IMPORTANTE
+                            name: formData.name,
+                            email: formData.email,
+                            phone: formData.phone,
+                            city: formData.city,
+                            province: formData.province,
+                            location: formData.city,
+                            donation_number: formData.donationNumber,
+                            status: 'Pendiente'
+                        }
+                    ]);
+
+                if (profileError) throw profileError;
+
+                alert('Registro completado. Por favor inicia sesión.'); // Si 'Confirm email' está desactivado
+                // Si 'Confirm email' estuviera activado, el mensaje sería "Revisa tu correo"
+                navigate('/login');
+            }
+        } catch (error: any) {
+            console.error('Error en registro:', error);
+            alert(error.message || 'Error al registrar la protectora');
+        } finally {
             setIsLoading(false);
-            alert('Solicitud enviada con éxito. Un administrador revisará tu solicitud.');
-            navigate('/');
-        }, 1500);
+        }
     };
 
     return (
