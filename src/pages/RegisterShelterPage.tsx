@@ -6,7 +6,7 @@ import { PawPrint } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 
-import { useShelterContext } from '@/context/ShelterContext';
+// import { useShelterContext } from '@/context/ShelterContext';
 import { supabase } from '@/lib/supabase';
 
 /**
@@ -15,7 +15,7 @@ import { supabase } from '@/lib/supabase';
  */
 const RegisterShelterPage = () => {
     const navigate = useNavigate();
-    const { addShelter } = useShelterContext();
+    // const { addShelter } = useShelterContext(); // Removed as we use direct Supabase Auth now
     const [isLoading, setIsLoading] = useState(false);
     const [formData, setFormData] = useState({
         name: '',
