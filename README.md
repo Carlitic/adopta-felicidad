@@ -16,7 +16,6 @@ Este proyecto nace con el objetivo de facilitar el proceso de adopción de masco
 *   **Gestión de Protectoras**: Panel para que las protectoras añadan, editen y eliminen fichas de animales.
 *   **Super Admin**: Panel para aprobar y gestionar las protectoras que se unen a la plataforma.
 *   **Diseño Responsivo**: Adaptado a móviles, tablets y escritorio.
-*   **Modo Oscuro/Claro**: Interfaz adaptable a las preferencias del usuario.
 
 ## 🛠️ Tecnologías Utilizadas
 
