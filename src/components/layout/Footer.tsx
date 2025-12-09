@@ -13,8 +13,8 @@ const Footer = () => {
                         <PawPrint className="h-5 w-5" />
                         <span className="font-semibold">Adopta Felicidad</span>
                     </div>
-                    <p className="text-sm text-muted-foreground text-center md:text-right">
-                        © {new Date().getFullYear()} Adopta Felicidad. v1.1.0
+                    <p className="text-xs text-muted-foreground mt-2 md:mt-0 text-center md:text-right">
+                        © {new Date().getFullYear()} Adopta Felicidad. v2.0.0
                     </p>
                 </div>
             </div>

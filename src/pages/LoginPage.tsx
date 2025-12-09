@@ -126,7 +126,13 @@ const LoginPage = () => {
                         <Button className="w-full bg-primary hover:bg-primary/90 text-white" disabled={isLoading}>
                             {isLoading ? 'Iniciando sesión...' : 'Entrar'}
                         </Button>
-                        <Link to="/" className="text-sm text-muted-foreground hover:text-primary">
+                        <div className="text-center text-sm">
+                            <span className="text-muted-foreground">¿No tienes cuenta? </span>
+                            <Link to="/registro-protectora" className="text-primary hover:underline font-medium">
+                                Regístrate aquí
+                            </Link>
+                        </div>
+                        <Link to="/" className="text-xs text-muted-foreground hover:text-primary text-center">
                             Volver al inicio
                         </Link>
                     </CardFooter>
