@@ -2,7 +2,7 @@
 
 ¡Bienvenido a **Adopta Felicidad**! Una plataforma web moderna diseñada para conectar protectoras de animales con personas que buscan adoptar a su nuevo mejor amigo.
 
-### 🌐 [Ver Demo en Vivo: adopta-felicidad.vercel.app](https://adopta-felicidad.vercel.app/)
+### 🌐 [Ver Demo en Vivo: carlitic.github.io/adopta-felicidad](https://carlitic.github.io/adopta-felicidad/)
 
 ## 🌟 Descripción
 
