@@ -20,7 +20,7 @@ function App() {
   return (
     <ShelterProvider>
       <AnimalProvider>
-        <Router>
+        <Router basename="/adopta-felicidad">
           <Routes>
             <Route path="/" element={<Layout />}>
               <Route index element={<LandingPage />} />
